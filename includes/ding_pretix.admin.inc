@@ -32,6 +32,61 @@ function ding_pretix_admin_settings_form($form, &$form_state) {
   // Load default settings.
   $defaults = variable_get('ding_pretix', []);
 
+
+  $form['ding_pretix_services'] = [
+    '#type' => 'fieldset',
+    '#title' => t('pretix services'),
+    '#collapsible' => TRUE,
+  ];
+
+  $key = 'https://pretix.eu/organizer/admin@example.com';
+
+  $form['ding_pretix_services'][$key] = [
+    '#type' => 'fieldset',
+    '#title' => $key,
+    '#collapsible' => TRUE,
+  ];
+
+  $form['ding_pretix_services'][$key]['enabled'] = [
+    '#type' => 'checkbox',
+    '#title' => t('Enabled'),
+    '#default_value' => array_key_exists('service_url', $defaults) ? $defaults['service_url'] : 'https://www.pretix.eu/',
+  ];
+
+  $form['ding_pretix_services'][$key]['service_url'] = [
+    '#type' => 'textfield',
+    '#title' => t('Pretix service URL'),
+    '#default_value' => array_key_exists('service_url', $defaults) ? $defaults['service_url'] : 'https://www.pretix.eu/',
+    '#description' => t('Enter a valid Pretix service endpoint without path info, such as https://www.pretix.eu/'),
+    '#required' => TRUE,
+    '#size' => 100,
+  ];
+
+  $form['ding_pretix_services'][$key]['organizer_slug'] = [
+    '#type' => 'textfield',
+    '#title' => t('Pretix default organizer slug'),
+    '#default_value' => array_key_exists('organizer_slug', $defaults) ? $defaults['organizer_slug'] : $user->name,
+    '#required' => TRUE,
+    '#description' => t('This is the default organizer slug used when connecting to Pretix. If you provide slug/API key for a specific library (below), events related to that library will use that key instead of the default key.'),
+  ];
+
+  $form['ding_pretix_services'][$key]['api_key'] = [
+    '#type' => 'textfield',
+    '#title' => t('The API key of the Organizer Team'),
+    '#default_value' => array_key_exists('api_key', $defaults) ? $defaults['api_key'] : '',
+    '#required' => TRUE,
+    '#description' => t('This is the default API key used when connecting to Pretix. If you provide slug/API key for a specific library (below), events related to that library will use that key instead of the default key.'),
+  ];
+
+  $form['ding_pretix_services'][$key]['template_event_slug'] = [
+    '#type' => 'textfield',
+    '#title' => t('The slug of the default event template'),
+    '#default_value' => array_key_exists('template_event_slug', $defaults) ? $defaults['template_event_slug'] : '',
+    '#required' => TRUE,
+    '#description' => t('This is the slug of the default event template. When events are created their setting etc. are copied from this event.'),
+  ];
+
+
   // Default settings.
   $form['ding_pretix'] = [
     '#type' => 'fieldset',
@@ -97,33 +152,35 @@ function ding_pretix_admin_settings_form($form, &$form_state) {
     $libraries = entity_load('node', $libraries_nids);
   }
 
-  foreach ($libraries as $library) {
-    $form['ding_pretix_libraries'][$library->nid] = [
-      '#type' => 'fieldset',
-      '#title' => t('@library API keys', ['@library' => $library->title]),
-      '#collapsible' => TRUE,
-      '#collapsed' => FALSE,
-    ];
+  if (isset($libraries)) {
+    foreach ($libraries as $library) {
+      $form['ding_pretix_libraries'][$library->nid] = [
+        '#type' => 'fieldset',
+        '#title' => t('@library API keys', ['@library' => $library->title]),
+        '#collapsible' => TRUE,
+        '#collapsed' => FALSE,
+      ];
 
-    $form['ding_pretix_libraries'][$library->nid]['slug'] = [
-      '#type' => 'textfield',
-      '#title' => t('Slug @library', ['@library' => $library->title]),
-      '#default_value' => array_key_exists($library->nid, $defaults) ? $defaults[$library->nid]['slug'] : '',
-      '#description' => t('The slug of the Pretix organizer to map to.'),
-    ];
+      $form['ding_pretix_libraries'][$library->nid]['slug'] = [
+        '#type' => 'textfield',
+        '#title' => t('Slug @library', ['@library' => $library->title]),
+        '#default_value' => array_key_exists($library->nid, $defaults) ? $defaults[$library->nid]['slug'] : '',
+        '#description' => t('The slug of the Pretix organizer to map to.'),
+      ];
 
-    $form['ding_pretix_libraries'][$library->nid]['apikey'] = [
-      '#type' => 'textfield',
-      '#title' => t('API key @library', ['@library' => $library->title]),
-      '#default_value' => array_key_exists($library->nid, $defaults) ? $defaults[$library->nid]['apikey'] : '',
-      '#description' => t('The API key of the Organizer Team'),
-    ];
+      $form['ding_pretix_libraries'][$library->nid]['apikey'] = [
+        '#type' => 'textfield',
+        '#title' => t('API key @library', ['@library' => $library->title]),
+        '#default_value' => array_key_exists($library->nid, $defaults) ? $defaults[$library->nid]['apikey'] : '',
+        '#description' => t('The API key of the Organizer Team'),
+      ];
+    }
   }
 
   // Get PSPs previously saved to a variable (first load), else use formstate
   // data (ajax calls).
   $ding_pretix_psp_elements = variable_get('ding_pretix_psp_elements', []);
-  $psp_elements = $form_state['values']['ding_pretix_psp_elements']['list'] ?? $ding_pretix_psp_elements['list'];
+  $psp_elements = $form_state['values']['ding_pretix_psp_elements']['list'] ?? $ding_pretix_psp_elements['list'] ?? [];
 
   $form['ding_pretix_psp_elements'] = [
     '#type' => 'fieldset',
