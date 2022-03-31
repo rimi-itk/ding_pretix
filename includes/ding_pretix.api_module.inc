@@ -74,6 +74,9 @@ function _ding_pretix_create_event($node, $service_settings) {
   // Create Event via clone.
   $result = _ding_pretix_http_request($clone_url, $clone_options);
 
+  // @todo Set default locale "locale" in https://docs.pretix.eu/en/latest/api/resources/events.html#event-settings.
+  // $default_locale = $node->default_locale;
+
   return $result;
 }
 
@@ -581,15 +584,21 @@ function _ding_pretix_built_request_body($node, $request_type = 'UPDATE') {
   // Events cannot be created as 'live' in Pretix.
   $live = ($request_type === 'INSERT') ? FALSE : $node->status;
 
+  $supported_locales = ['da', 'en'];
+  foreach ($supported_locales as $locale) {
+    $name[$locale] = check_plain($node->title);
+    $location[$locale] = $place;
+  }
+
   $body = [
-    'name' => ['da' => check_plain($node->title)],
+    'name' => $name,
     'slug' => $node->nid,
     'live' => $live,
     'currency' => 'DKK',
     'date_from' => date_format($start_date, 'c'),
     'date_to' => date_format($end_date, 'c'),
     'is_public' => $node->status,
-    'location' => ['da' => $place],
+    'location' => $location,
     'has_subevents' => FALSE,
   ];
 
